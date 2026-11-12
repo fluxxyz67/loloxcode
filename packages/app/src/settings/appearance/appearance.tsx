@@ -2,8 +2,8 @@ import { Component, Show } from "solid-js"
 import { Select } from "@opencode/ui/select"
 import { TextInput } from "@opencode/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
-import { ExternalLink } from "@/runtime/platform/external-link"
 import { SettingsList } from "@/settings/list"
+import { ThemeGallery } from "@/settings/appearance/theme-gallery"
 import { SettingsRow } from "@/settings/row"
 import { createAppearanceSettingsController, type AppearanceSettingsController } from "@/settings/general/controllers"
 import "@/settings/settings.css"
@@ -108,28 +108,7 @@ export const SettingsAppearance: Component = () => {
               />
             </SettingsRow>
 
-            <SettingsRow
-              title={language.t("settings.general.row.theme.title")}
-              description={
-                <>
-                  {language.t("settings.general.row.theme.description")}{" "}
-                  <ExternalLink class="settings-link" href="https://opencode.ai/docs/themes">
-                    {language.t("common.learnMore")}
-                  </ExternalLink>
-                </>
-              }
-            >
-              <Select
-                data-action="settings-theme"
-                options={appearance.theme.options()}
-                current={appearance.theme.current()}
-                placement="bottom-end"
-                gutter={6}
-                value={(option) => option.id}
-                label={(option) => option.name}
-                onSelect={appearance.theme.select}
-              />
-            </SettingsRow>
+            <ThemeGallery />
 
             <FontSetting kind="ui" fonts={appearance.fonts} />
             <FontSetting kind="code" fonts={appearance.fonts} />
