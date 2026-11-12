@@ -494,6 +494,8 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Pilih apakah OpenCode mengikuti tema sistem, terang, atau gelap",
   "settings.general.row.theme.title": "Tema",
   "settings.general.row.theme.description": "Sesuaikan tema OpenCode.",
+  "settings.appearance.theme.gallery.label": "Tema",
+  "settings.appearance.theme.gallery.hint": "Sorot untuk pratinjau · klik untuk memakai · Esc untuk batal",
   "settings.general.row.font.title": "Font kode",
   "settings.general.row.font.description": "Sesuaikan font yang digunakan di blok kode",
   "settings.general.row.terminalFont.title": "Font terminal",

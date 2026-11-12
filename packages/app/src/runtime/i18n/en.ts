@@ -1096,6 +1096,8 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Choose whether OpenCode follows the system, light, or dark theme",
   "settings.general.row.theme.title": "Theme",
   "settings.general.row.theme.description": "Customise how OpenCode is themed.",
+  "settings.appearance.theme.gallery.label": "Themes",
+  "settings.appearance.theme.gallery.hint": "Hover to preview · click to apply · Esc to cancel",
   "settings.general.row.font.title": "Code Font",
   "settings.general.row.font.description": "Customise the font used in code blocks",
   "settings.general.row.terminalFont.title": "Terminal Font",
