@@ -1,4 +1,4 @@
-import { For, Show, onCleanup, onMount, type Component } from "solid-js"
+import { For, Show, batch, createEffect, createSignal, onCleanup, onMount, type Component } from "solid-js"
 import { Icon } from "@opencode/ui/icon"
 import { useTheme, type DesktopTheme } from "@opencode/ui/theme"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -17,7 +17,7 @@ function swatchStyle(swatch: ThemeSwatch) {
   ].join(";")
 }
 
-const Miniature: Component<{ swatch: ThemeSwatch }> = (props) => (
+const Miniature: Component = () => (
   <span data-slot="theme-card-mini">
     <span data-slot="theme-card-dots">
       <i />
@@ -40,18 +40,24 @@ const Miniature: Component<{ swatch: ThemeSwatch }> = (props) => (
 
 const Half: Component<{ mode: "light" | "dark"; swatch: ThemeSwatch }> = (props) => (
   <span data-slot="theme-card-half" data-mode={props.mode} style={swatchStyle(props.swatch)}>
-    <Miniature swatch={props.swatch} />
+    <Miniature />
   </span>
 )
 
 const PREVIEW_DELAY_MS = 80
+
+type PreviewSource = "pointer" | "focus"
 
 export const ThemeGallery: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
   let grid: HTMLDivElement | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
+  let pending: { id: string; source: PreviewSource } | undefined
   const cached = new Map<string, { id: string; name: string; theme: DesktopTheme }>()
+  const [selectedId, setSelectedId] = createSignal(theme.themeId())
+  const [tabStopId, setTabStopId] = createSignal(theme.themeId())
+  const [previewed, setPreviewed] = createSignal<{ id: string; source: PreviewSource }>()
 
   const cards = () => {
     const loaded = theme.themes()
@@ -79,48 +85,96 @@ export const ThemeGallery: Component = () => {
   }
 
   const clearTimer = () => {
-    if (timer === undefined) return
-    clearTimeout(timer)
+    if (timer !== undefined) clearTimeout(timer)
     timer = undefined
+    pending = undefined
   }
 
-  const schedulePreview = (id: string) => {
+  const clearPending = (source: PreviewSource) => {
+    if (pending?.source === source) clearTimer()
+  }
+
+  const cancelActivePreview = () => {
+    if (!previewed()) return
+
+    batch(() => {
+      setPreviewed(undefined)
+      theme.cancelPreview()
+    })
+  }
+
+  const schedulePreview = (id: string, source: PreviewSource) => {
     clearTimer()
 
-    if (id === theme.themeId()) {
-      theme.cancelPreview()
+    const current = previewed()
+
+    // Re-entering the card that is already previewed keeps it, instead of cancelling and restoring the committed theme.
+    if (current?.id === id) return
+
+    if (id === selectedId()) {
+      cancelActivePreview()
 
       return
     }
 
+    pending = { id, source }
     timer = setTimeout(() => {
       timer = undefined
-      theme.previewTheme(id)
+      const next = pending
+
+      pending = undefined
+
+      if (!next) return
+
+      batch(() => {
+        theme.previewTheme(next.id)
+        setPreviewed(next)
+      })
     }, PREVIEW_DELAY_MS)
   }
 
   const commit = (id: string) => {
     clearTimer()
-    theme.setTheme(id)
-    theme.commitPreview()
+
+    batch(() => {
+      setPreviewed(undefined)
+      setSelectedId(id)
+      setTabStopId(id)
+      theme.setTheme(id)
+    })
   }
 
   const tabStop = () => {
     const items = cards()
-    const selected = theme.themeId()
+    const stop = tabStopId()
 
-    return items.some((card) => card.id === selected) ? selected : items[0]?.id
+    return items.some((card) => card.id === stop) ? stop : items[0]?.id
   }
+
+  // Keeps the selection and tab stop on the committed theme; `theme.themeId()` also follows a preview, so it cannot
+  // drive either until the preview ends.
+  createEffect(() => {
+    const shown = theme.themeId()
+    const current = previewed()
+
+    if (current && current.id === shown) return
+
+    if (current) setPreviewed(undefined)
+
+    setSelectedId(shown)
+
+    if (!grid?.contains(document.activeElement)) setTabStopId(shown)
+  })
 
   onMount(() => void theme.loadThemes())
 
   onCleanup(() => {
     clearTimer()
-    theme.cancelPreview()
+    cancelActivePreview()
   })
 
   return (
-    <section data-component="theme-gallery">
+    <section data-component="theme-gallery" data-action="settings-theme">
       <div data-slot="theme-gallery-header">
         <h3 data-slot="theme-gallery-title">{language.t("settings.general.row.theme.title")}</h3>
         <p data-slot="theme-gallery-description">
@@ -137,22 +191,23 @@ export const ThemeGallery: Component = () => {
         role="radiogroup"
         aria-label={language.t("settings.appearance.theme.gallery.label")}
         onPointerLeave={() => {
-          clearTimer()
+          clearPending("pointer")
 
-          if (!grid?.contains(document.activeElement)) theme.cancelPreview()
+          if (previewed()?.source === "pointer") cancelActivePreview()
         }}
         onFocusOut={(event) => {
           const related = event.relatedTarget
 
           if (related instanceof Node && grid?.contains(related)) return
 
-          clearTimer()
-          theme.cancelPreview()
+          clearPending("focus")
+
+          if (previewed()?.source === "focus") cancelActivePreview()
         }}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             clearTimer()
-            theme.cancelPreview()
+            cancelActivePreview()
 
             return
           }
@@ -185,13 +240,16 @@ export const ThemeGallery: Component = () => {
             <button
               type="button"
               role="radio"
-              aria-checked={card.id === theme.themeId()}
+              aria-checked={card.id === selectedId()}
               aria-label={card.name}
               data-slot="theme-card"
               data-theme-id={card.id}
               tabIndex={card.id === tabStop() ? 0 : -1}
-              onPointerEnter={() => schedulePreview(card.id)}
-              onFocus={() => schedulePreview(card.id)}
+              onPointerEnter={() => schedulePreview(card.id, "pointer")}
+              onFocus={() => {
+                setTabStopId(card.id)
+                schedulePreview(card.id, "focus")
+              }}
               onClick={() => commit(card.id)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter" && event.key !== " ") return
@@ -205,7 +263,7 @@ export const ThemeGallery: Component = () => {
               </span>
               <span data-slot="theme-card-footer">
                 <span data-slot="theme-card-name">{card.name}</span>
-                <Show when={card.id === theme.themeId()}>
+                <Show when={card.id === selectedId()}>
                   <span data-slot="theme-card-check">
                     <Icon name="check" size="small" />
                   </span>

@@ -32,8 +32,48 @@ story("previews on hover and restores the committed theme on leave", async ({ mo
   const initial = await committed(page)
   await page.locator('[data-theme-id="gruvbox"]').hover()
   await expect.poll(() => committed(page)).toBe("gruvbox")
+  // A preview is not a selection: the checked radio and the tab stop stay on the committed theme.
+  await expect(page.locator('[data-slot="theme-card"][aria-checked="true"]')).toHaveAttribute("data-theme-id", initial!)
+  await expect(page.locator('[data-slot="theme-card"][tabindex="0"]')).toHaveAttribute("data-theme-id", initial!)
   await page.mouse.move(0, 0)
   await expect.poll(() => committed(page)).toBe(initial)
+})
+
+story("keeps the preview when the pointer crosses back over the previewed card", async ({ mount, page }) => {
+  await mount("app-theme-gallery--gallery")
+  await page.locator('[data-theme-id="gruvbox"]').hover()
+  await expect.poll(() => committed(page)).toBe("gruvbox")
+
+  // Both enter events land inside one preview delay, so the displayed theme is still gruvbox on re-entry.
+  await page.locator('[data-theme-id="nord"]').dispatchEvent("pointerenter")
+  await page.locator('[data-theme-id="gruvbox"]').dispatchEvent("pointerenter")
+  await page.waitForTimeout(150)
+  await expect.poll(() => committed(page)).toBe("gruvbox")
+})
+
+story("cancels a pointer preview on leave even while a card has focus", async ({ mount, page }) => {
+  await mount("app-theme-gallery--gallery")
+  const initial = await committed(page)
+  await page.locator('[data-theme-id="gruvbox"]').focus()
+  await expect.poll(() => committed(page)).toBe("gruvbox")
+  await page.locator('[data-theme-id="nord"]').hover()
+  await expect.poll(() => committed(page)).toBe("nord")
+  await page.mouse.move(0, 0)
+  await expect.poll(() => committed(page)).toBe(initial)
+})
+
+story("does not preview after the pointer leaves before the delay", async ({ mount, page }) => {
+  await mount("app-theme-gallery--gallery")
+  const initial = await committed(page)
+  await page.locator('[data-theme-id="gruvbox"]').dispatchEvent("pointerenter")
+  await page.locator('[data-slot="theme-gallery-grid"]').dispatchEvent("pointerleave")
+  await page.waitForTimeout(150)
+  await expect.poll(() => committed(page)).toBe(initial)
+})
+
+story("exposes the settings search target", async ({ mount, page }) => {
+  await mount("app-theme-gallery--gallery")
+  await expect(page.locator('[data-component="theme-gallery"][data-action="settings-theme"]')).toBeVisible()
 })
 
 story("settles on the last card of a sweep", async ({ mount, page }) => {
@@ -46,10 +86,15 @@ story("settles on the last card of a sweep", async ({ mount, page }) => {
 story("cancels a preview with Escape", async ({ mount, page }) => {
   await mount("app-theme-gallery--gallery")
   const initial = await committed(page)
-  await page.locator('[data-theme-id="gruvbox"]').focus()
+  const card = page.locator('[data-theme-id="gruvbox"]')
+  await card.focus()
   await expect.poll(() => committed(page)).toBe("gruvbox")
   await page.keyboard.press("Escape")
   await expect.poll(() => committed(page)).toBe(initial)
+  // Focus stays on the card the user was exploring, and that card keeps the gallery's tab stop.
+  await expect(card).toBeFocused()
+  await expect(card).toHaveAttribute("tabindex", "0")
+  await expect(page.locator('[data-slot="theme-card"][aria-checked="true"]')).toHaveAttribute("data-theme-id", initial!)
 })
 
 story("restores the committed theme when the gallery unmounts", async ({ mount, page }) => {

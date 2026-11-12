@@ -43,7 +43,7 @@ describe("themeSwatch", () => {
     expect(themeSwatch(theme, "light").accent).toBe("#076678")
   })
 
-  test("resolves a seeds theme to concrete colors", () => {
+  test("keeps a seeds theme's primary and info identity", () => {
     const theme = {
       name: "Seeds",
       id: "seeds",
@@ -51,7 +51,14 @@ describe("themeSwatch", () => {
       dark: { seeds: { neutral: "#282828", primary: "#83a598", success: "#b8bb26", warning: "#fabd2f", error: "#fb4934", info: "#d3869b", interactive: "#83a598", diffAdd: "#b8bb26", diffDelete: "#fb4934" } },
     } satisfies DesktopTheme
 
-    for (const color of [themeSwatch(theme, "light"), themeSwatch(theme, "dark")].flatMap((s) => [s.background, s.text, s.primary, s.accent, ...s.code]))
+    const light = themeSwatch(theme, "light")
+
+    expect(light.primary).toBe("#076678")
+    expect(light.accent).toBe("#8f3f71")
+    expect(light.code.slice(0, 4)).toEqual(["#8f3f71", "#79740e", "#076678", "#8f3f71"])
+    expect(light.code[4]).toMatch(/^#[0-9a-f]{6}$/i)
+
+    for (const color of [light, themeSwatch(theme, "dark")].flatMap((s) => [s.background, s.text, s.primary, s.accent, ...s.code]))
       expect(color).toMatch(/^#[0-9a-f]{6}$/i)
   })
 })

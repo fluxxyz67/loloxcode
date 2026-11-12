@@ -145,7 +145,7 @@ New:
 - `packages/app/src/settings/appearance/theme-gallery.css` — the card, diagonal light/dark preview and grid styles.
 - `packages/app/src/settings/appearance/theme-gallery.stories.tsx` — the `app-theme-gallery--gallery` and
   `app-theme-gallery--unmount` stories.
-- `packages/app/component-tests/theme-gallery.spec.ts` — the gallery's 10 component tests.
+- `packages/app/component-tests/theme-gallery.spec.ts` — the gallery's 14 component tests.
 - `packages/ui/src/typography/wordmark/letters.ts` — the nine `loloXcode` glyphs, plus the wordmark and pin-grid
   dimensions, shared by the wordmark, the pin board, the brick breaker, the About scramble, the `Logo` and the OAuth
   page.
@@ -314,9 +314,10 @@ an unknown target fails `getCurrentCli`.
 The result is `packages/desktop/dist/loloxcode-desktop-win-x64.exe`. The CLI has to come from this tree: the prompt source
 lives in `packages/core`, which is compiled into the bundled `opencode.exe`.
 
-`patches/lolox-kit.patch` covers every file above, new ones included (51 files, about 240 KB, most of it the prompt).
-`git apply --3way` resolves most context drift; the markers keep the hunks small. The theme gallery files above are
-not folded into that patch yet, so regenerate it after committing the working tree.
+`patches/lolox-kit.patch` covers every file above that existed when it was generated (51 files, about 240 KB, most of
+it the prompt). `git apply --3way` resolves most context drift; the markers keep the hunks small. The theme gallery
+files above were added after that generation and are not folded into the patch yet, so regenerate it after committing
+the working tree.
 
 ## What was verified
 
