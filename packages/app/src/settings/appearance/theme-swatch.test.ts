@@ -38,7 +38,8 @@ describe("themeSwatch", () => {
 
   test("uses primary when the palette has no accent", () => {
     const { accent, ...palette } = paletteTheme.light.palette
-    const theme = { ...paletteTheme, light: { palette } } as DesktopTheme
+    const theme = { ...paletteTheme, light: { palette } } satisfies DesktopTheme
+
     expect(themeSwatch(theme, "light").accent).toBe("#076678")
   })
 

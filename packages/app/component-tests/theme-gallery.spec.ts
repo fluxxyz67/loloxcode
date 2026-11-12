@@ -16,8 +16,10 @@ story("draws each card in both color modes", async ({ mount, page }) => {
   await expect(card).toBeVisible()
   const light = card.locator('[data-slot="theme-card-half"][data-mode="light"]')
   const dark = card.locator('[data-slot="theme-card-half"][data-mode="dark"]')
+
   const backgrounds = await Promise.all([light, dark].map((half) =>
     half.evaluate((element) => getComputedStyle(element).getPropertyValue("--tg-background"))))
+
   expect(backgrounds[0]).not.toBe("")
   expect(backgrounds[0]).not.toBe(backgrounds[1])
 })
@@ -36,6 +38,7 @@ story("previews on hover and restores the committed theme on leave", async ({ mo
 
 story("settles on the last card of a sweep", async ({ mount, page }) => {
   await mount("app-theme-gallery--gallery")
+
   for (const id of ["gruvbox", "nord", "kanagawa"]) await page.locator(`[data-theme-id="${id}"]`).hover()
   await expect.poll(() => committed(page)).toBe("kanagawa")
 })
@@ -70,7 +73,12 @@ story("commits a clicked theme and keeps it after the pointer leaves", async ({ 
 
 story("commits the focused theme with Enter and Space", async ({ mount, page }) => {
   await mount("app-theme-gallery--gallery")
-  const blur = () => page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+
+  const blur = () => page.evaluate(() => {
+    const active = document.activeElement
+
+    if (active instanceof HTMLElement) active.blur()
+  })
 
   await page.locator('[data-theme-id="nord"]').focus()
   await page.keyboard.press("Enter")
@@ -88,10 +96,16 @@ story("commits the focused theme with Enter and Space", async ({ mount, page }) 
 story("moves focus and preview with the arrow keys", async ({ mount, page }) => {
   await mount("app-theme-gallery--gallery")
   await page.locator('[data-theme-id="gruvbox"]').focus()
+
   const next = await page.evaluate(() => {
-    const cards = [...document.querySelectorAll('[data-slot="theme-card"]')] as HTMLElement[]
-    return cards[cards.indexOf(document.activeElement as HTMLElement) + 1]?.dataset.themeId
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-slot="theme-card"]')]
+    const active = document.activeElement
+
+    if (!(active instanceof HTMLElement)) return undefined
+
+    return cards[cards.indexOf(active) + 1]?.dataset.themeId
   })
+
   await page.keyboard.press("ArrowRight")
   await expect(page.locator(`[data-theme-id="${next}"]`)).toBeFocused()
   await expect.poll(() => committed(page)).toBe(next)

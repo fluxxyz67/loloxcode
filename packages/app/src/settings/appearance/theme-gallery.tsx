@@ -56,16 +56,20 @@ export const ThemeGallery: Component = () => {
   const cards = () => {
     const loaded = theme.themes()
     const live = new Set<string>()
+
     const result = theme.ids().flatMap((id) => {
       const value = loaded[id]
+
       if (!value) return []
 
       live.add(id)
       const existing = cached.get(id)
+
       if (existing && existing.theme === value && existing.name === value.name) return [existing]
 
       const card = { id, name: value.name, theme: value }
       cached.set(id, card)
+
       return [card]
     })
 
@@ -85,6 +89,7 @@ export const ThemeGallery: Component = () => {
 
     if (id === theme.themeId()) {
       theme.cancelPreview()
+
       return
     }
 
@@ -103,6 +108,7 @@ export const ThemeGallery: Component = () => {
   const tabStop = () => {
     const items = cards()
     const selected = theme.themeId()
+
     return items.some((card) => card.id === selected) ? selected : items[0]?.id
   }
 
@@ -132,11 +138,14 @@ export const ThemeGallery: Component = () => {
         aria-label={language.t("settings.appearance.theme.gallery.label")}
         onPointerLeave={() => {
           clearTimer()
+
           if (!grid?.contains(document.activeElement)) theme.cancelPreview()
         }}
         onFocusOut={(event) => {
           const related = event.relatedTarget
+
           if (related instanceof Node && grid?.contains(related)) return
+
           clearTimer()
           theme.cancelPreview()
         }}
@@ -144,13 +153,15 @@ export const ThemeGallery: Component = () => {
           if (event.key === "Escape") {
             clearTimer()
             theme.cancelPreview()
+
             return
           }
 
           const items = cards()
-          const index = items.findIndex(
-            (card) => card.id === (document.activeElement as HTMLElement | null)?.dataset.themeId,
-          )
+          const focused = document.activeElement
+          const focusedId = focused instanceof HTMLElement ? focused.dataset.themeId : undefined
+          const index = items.findIndex((card) => card.id === focusedId)
+
           const target =
             event.key === "ArrowLeft" || event.key === "ArrowUp"
               ? index - 1
@@ -165,6 +176,7 @@ export const ThemeGallery: Component = () => {
           if (target === undefined) return
           event.preventDefault()
           const id = items[Math.min(Math.max(target, 0), items.length - 1)]?.id
+
           if (id) grid?.querySelector<HTMLElement>(`[data-theme-id="${CSS.escape(id)}"]`)?.focus()
         }}
       >
