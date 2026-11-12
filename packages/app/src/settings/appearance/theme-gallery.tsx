@@ -94,6 +94,18 @@ export const ThemeGallery: Component = () => {
     }, PREVIEW_DELAY_MS)
   }
 
+  const commit = (id: string) => {
+    clearTimer()
+    theme.setTheme(id)
+    theme.commitPreview()
+  }
+
+  const tabStop = () => {
+    const items = cards()
+    const selected = theme.themeId()
+    return items.some((card) => card.id === selected) ? selected : items[0]?.id
+  }
+
   onMount(() => void theme.loadThemes())
 
   onCleanup(() => {
@@ -129,9 +141,31 @@ export const ThemeGallery: Component = () => {
           theme.cancelPreview()
         }}
         onKeyDown={(event) => {
-          if (event.key !== "Escape") return
-          clearTimer()
-          theme.cancelPreview()
+          if (event.key === "Escape") {
+            clearTimer()
+            theme.cancelPreview()
+            return
+          }
+
+          const items = cards()
+          const index = items.findIndex(
+            (card) => card.id === (document.activeElement as HTMLElement | null)?.dataset.themeId,
+          )
+          const target =
+            event.key === "ArrowLeft" || event.key === "ArrowUp"
+              ? index - 1
+              : event.key === "ArrowRight" || event.key === "ArrowDown"
+                ? index + 1
+                : event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? items.length - 1
+                    : undefined
+
+          if (target === undefined) return
+          event.preventDefault()
+          const id = items[Math.min(Math.max(target, 0), items.length - 1)]?.id
+          if (id) grid?.querySelector<HTMLElement>(`[data-theme-id="${CSS.escape(id)}"]`)?.focus()
         }}
       >
         <For each={cards()}>
@@ -143,9 +177,15 @@ export const ThemeGallery: Component = () => {
               aria-label={card.name}
               data-slot="theme-card"
               data-theme-id={card.id}
-              tabIndex={card.id === theme.themeId() ? 0 : -1}
+              tabIndex={card.id === tabStop() ? 0 : -1}
               onPointerEnter={() => schedulePreview(card.id)}
               onFocus={() => schedulePreview(card.id)}
+              onClick={() => commit(card.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return
+                event.preventDefault()
+                commit(card.id)
+              }}
             >
               <span data-slot="theme-card-preview">
                 <Half mode="light" swatch={themeSwatch(card.theme, "light")} />
