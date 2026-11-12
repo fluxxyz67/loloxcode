@@ -1,6 +1,6 @@
-import { For, Show, onMount, type Component } from "solid-js"
+import { For, Show, onCleanup, onMount, type Component } from "solid-js"
 import { Icon } from "@opencode/ui/icon"
-import { useTheme } from "@opencode/ui/theme"
+import { useTheme, type DesktopTheme } from "@opencode/ui/theme"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ExternalLink } from "@/runtime/platform/external-link"
 import { themeSwatch, type ThemeSwatch } from "./theme-swatch"
@@ -44,19 +44,62 @@ const Half: Component<{ mode: "light" | "dark"; swatch: ThemeSwatch }> = (props)
   </span>
 )
 
+const PREVIEW_DELAY_MS = 80
+
 export const ThemeGallery: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
+  let grid: HTMLDivElement | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const cached = new Map<string, { id: string; name: string; theme: DesktopTheme }>()
 
   const cards = () => {
     const loaded = theme.themes()
-    return theme.ids().flatMap((id) => {
+    const live = new Set<string>()
+    const result = theme.ids().flatMap((id) => {
       const value = loaded[id]
-      return value ? [{ id, name: value.name, theme: value }] : []
+      if (!value) return []
+
+      live.add(id)
+      const existing = cached.get(id)
+      if (existing && existing.theme === value && existing.name === value.name) return [existing]
+
+      const card = { id, name: value.name, theme: value }
+      cached.set(id, card)
+      return [card]
     })
+
+    for (const id of cached.keys()) if (!live.has(id)) cached.delete(id)
+
+    return result
+  }
+
+  const clearTimer = () => {
+    if (timer === undefined) return
+    clearTimeout(timer)
+    timer = undefined
+  }
+
+  const schedulePreview = (id: string) => {
+    clearTimer()
+
+    if (id === theme.themeId()) {
+      theme.cancelPreview()
+      return
+    }
+
+    timer = setTimeout(() => {
+      timer = undefined
+      theme.previewTheme(id)
+    }, PREVIEW_DELAY_MS)
   }
 
   onMount(() => void theme.loadThemes())
+
+  onCleanup(() => {
+    clearTimer()
+    theme.cancelPreview()
+  })
 
   return (
     <section data-component="theme-gallery">
@@ -71,9 +114,25 @@ export const ThemeGallery: Component = () => {
       </div>
 
       <div
+        ref={grid}
         data-slot="theme-gallery-grid"
         role="radiogroup"
         aria-label={language.t("settings.appearance.theme.gallery.label")}
+        onPointerLeave={() => {
+          clearTimer()
+          if (!grid?.contains(document.activeElement)) theme.cancelPreview()
+        }}
+        onFocusOut={(event) => {
+          const related = event.relatedTarget
+          if (related instanceof Node && grid?.contains(related)) return
+          clearTimer()
+          theme.cancelPreview()
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return
+          clearTimer()
+          theme.cancelPreview()
+        }}
       >
         <For each={cards()}>
           {(card) => (
@@ -85,6 +144,8 @@ export const ThemeGallery: Component = () => {
               data-slot="theme-card"
               data-theme-id={card.id}
               tabIndex={card.id === theme.themeId() ? 0 : -1}
+              onPointerEnter={() => schedulePreview(card.id)}
+              onFocus={() => schedulePreview(card.id)}
             >
               <span data-slot="theme-card-preview">
                 <Half mode="light" swatch={themeSwatch(card.theme, "light")} />
