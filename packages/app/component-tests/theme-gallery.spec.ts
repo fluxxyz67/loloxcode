@@ -6,6 +6,7 @@ story("renders a card for every loaded theme", async ({ mount, page }) => {
   const cards = page.locator('[data-slot="theme-card"]')
   await expect(cards.first()).toBeVisible()
   await expect.poll(() => cards.count()).toBeGreaterThan(30)
+  await expect(page.locator('[data-theme-id="gruvbox"] [data-slot="theme-card-half"]').first()).toBeVisible()
   await expect(page.locator('[data-theme-id="gruvbox"]')).toBeVisible()
   await expect.poll(() => page.locator('[data-slot="theme-card"][aria-checked="true"]').count()).toBe(1)
 })
@@ -154,6 +155,8 @@ story("moves focus and preview with the arrow keys", async ({ mount, page }) => 
   await page.keyboard.press("ArrowRight")
   await expect(page.locator(`[data-theme-id="${next}"]`)).toBeFocused()
   await expect.poll(() => committed(page)).toBe(next)
+  // End reaches a card whose theme import may still be in flight; focusing it previews once the theme arrives.
+  await expect(page.locator('[data-theme-id="zenburn"] [data-slot="theme-card-half"]').first()).toBeVisible()
   await page.keyboard.press("End")
   await expect.poll(() => committed(page)).toBe("zenburn")
   await page.keyboard.press("Home")
