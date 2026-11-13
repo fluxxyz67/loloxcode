@@ -48,40 +48,36 @@ const PREVIEW_DELAY_MS = 80
 
 type PreviewSource = "pointer" | "focus"
 
+type Card = { id: string; name: string; theme?: DesktopTheme }
+
 export const ThemeGallery: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
   let grid: HTMLDivElement | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
   let pending: { id: string; source: PreviewSource } | undefined
-  const cached = new Map<string, { id: string; name: string; theme: DesktopTheme }>()
+  const cached = new Map<string, Card>()
   const [selectedId, setSelectedId] = createSignal(theme.themeId())
   const [tabStopId, setTabStopId] = createSignal(theme.themeId())
   const [previewed, setPreviewed] = createSignal<{ id: string; source: PreviewSource }>()
 
+  // Every id gets a card, loaded or not: the grid keeps its final shape while the bundled imports arrive, instead of
+  // growing from one card to thirty-six under the pointer.
   const cards = () => {
     const loaded = theme.themes()
-    const live = new Set<string>()
 
-    const result = theme.ids().flatMap((id) => {
+    return theme.ids().map((id) => {
       const value = loaded[id]
-
-      if (!value) return []
-
-      live.add(id)
+      const name = value?.name ?? theme.name(id)
       const existing = cached.get(id)
 
-      if (existing && existing.theme === value && existing.name === value.name) return [existing]
+      if (existing && existing.theme === value && existing.name === name) return existing
 
-      const card = { id, name: value.name, theme: value }
+      const card: Card = { id, name, theme: value }
       cached.set(id, card)
 
-      return [card]
+      return card
     })
-
-    for (const id of cached.keys()) if (!live.has(id)) cached.delete(id)
-
-    return result
   }
 
   const clearTimer = () => {
@@ -168,6 +164,23 @@ export const ThemeGallery: Component = () => {
 
   onMount(() => void theme.loadThemes())
 
+  // Escape cancels a preview from anywhere, before the settings surface sees the key: hovering a card does not move
+  // focus, so a listener on the grid would never fire. With no preview open, Escape keeps its global meaning.
+  onMount(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || (previewed() === undefined && pending === undefined))
+        return
+
+      event.preventDefault()
+      event.stopPropagation()
+      clearTimer()
+      cancelActivePreview()
+    }
+
+    window.addEventListener("keydown", onKeyDown, true)
+    onCleanup(() => window.removeEventListener("keydown", onKeyDown, true))
+  })
+
   onCleanup(() => {
     clearTimer()
     cancelActivePreview()
@@ -205,13 +218,6 @@ export const ThemeGallery: Component = () => {
           if (previewed()?.source === "focus") cancelActivePreview()
         }}
         onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            clearTimer()
-            cancelActivePreview()
-
-            return
-          }
-
           const items = cards()
           const focused = document.activeElement
           const focusedId = focused instanceof HTMLElement ? focused.dataset.themeId : undefined
@@ -257,9 +263,15 @@ export const ThemeGallery: Component = () => {
                 commit(card.id)
               }}
             >
-              <span data-slot="theme-card-preview">
-                <Half mode="light" swatch={themeSwatch(card.theme, "light")} />
-                <Half mode="dark" swatch={themeSwatch(card.theme, "dark")} />
+              <span data-slot="theme-card-preview" data-loading={card.theme ? undefined : ""}>
+                <Show when={card.theme}>
+                  {(value) => (
+                    <>
+                      <Half mode="light" swatch={themeSwatch(value(), "light")} />
+                      <Half mode="dark" swatch={themeSwatch(value(), "dark")} />
+                    </>
+                  )}
+                </Show>
               </span>
               <span data-slot="theme-card-footer">
                 <span data-slot="theme-card-name">{card.name}</span>
