@@ -84,6 +84,7 @@
     "./toast": "./src/feedback/toast/toast.tsx",
     "./tooltip": "./src/overlays/tooltip/tooltip.tsx",
     "./wordmark": "./src/typography/wordmark/wordmark.tsx",
+    "./wordmark/letters": "./src/typography/wordmark/letters.ts",
     "./*": "./src/components/*.tsx",
     "./i18n/*": "./src/i18n/*.ts",
     "./hooks": "./src/hooks/index.ts",

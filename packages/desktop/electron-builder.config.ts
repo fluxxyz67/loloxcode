@@ -41,9 +41,9 @@ function resolveChannel() {
 }
 
 const APP_IDS = {
-  dev: "ai.opencode.desktop.dev",
-  beta: "ai.opencode.desktop.beta",
-  prod: "ai.opencode.desktop",
+  dev: "app.loloxcode.desktop.dev",
+  beta: "app.loloxcode.desktop.beta",
+  prod: "app.loloxcode.desktop",
 } as const
 
 // libappimage (used by AppImageLauncher) resolves the .desktop entry inside an
@@ -64,7 +64,7 @@ const getBase = (appId: string): Configuration => {
   const desktopName = `${appId}.desktop`
 
   return {
-    artifactName: "opencode-desktop-${os}-${arch}.${ext}",
+    artifactName: "loloxcode-desktop-${os}-${arch}.${ext}",
     directories: {
       output: "dist",
       buildResources: "resources",
@@ -218,7 +218,7 @@ export function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode Dev",
+        productName: "loloXcode Dev",
         publish: {
           provider: "generic",
           url: "https://opencode.ai/update/api/dev/desktop/opencode/",
@@ -226,7 +226,7 @@ export function getConfig() {
         },
         deb: { fpm: [...previewCompressionFpm("deb"), metainfoFpm(appId)] },
         rpm: {
-          packageName: "opencode-dev",
+          packageName: "loloxcode-dev",
           fpm: [rpmNoBuildIdLinksFpm, ...previewCompressionFpm("rpm"), metainfoFpm(appId)],
         },
       }
@@ -236,8 +236,8 @@ export function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode Beta",
-        protocols: { name: "OpenCode Beta", schemes: ["opencode"] },
+        productName: "loloXcode Beta",
+        protocols: { name: "loloXcode Beta", schemes: ["opencode"] },
         publish: {
           provider: "generic",
           url: "https://opencode.ai/update/api/beta/desktop/opencode/",
@@ -245,7 +245,7 @@ export function getConfig() {
         },
         deb: { fpm: [...previewCompressionFpm("deb"), metainfoFpm(appId)] },
         rpm: {
-          packageName: "opencode-beta",
+          packageName: "loloxcode-beta",
           fpm: [rpmNoBuildIdLinksFpm, ...previewCompressionFpm("rpm"), metainfoFpm(appId)],
         },
       }
@@ -255,8 +255,8 @@ export function getConfig() {
       return {
         ...base,
         appId,
-        productName: "OpenCode",
-        protocols: { name: "OpenCode", schemes: ["opencode"] },
+        productName: "loloXcode",
+        protocols: { name: "loloXcode", schemes: ["opencode"] },
         // An Icon Composer package compiles to Assets.car, which macOS 26 and later draw the app icon from
         // (Dock, Finder, system dialogs and the system icon styles). Older macOS keeps using the ICNS.
         mac: { ...base.mac, icon: "resources/icons/icon.icon" },
@@ -268,7 +268,7 @@ export function getConfig() {
           channel: "latest",
         },
         deb: { fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
-        rpm: { packageName: "opencode", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId), legacyDesktopEntryFpm] },
+        rpm: { packageName: "loloxcode", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId), legacyDesktopEntryFpm] },
       }
     }
   }

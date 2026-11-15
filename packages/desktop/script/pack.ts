@@ -36,7 +36,8 @@ if (app) {
   // The installer uses the channel's icons; the rest of the app is already built and signed.
   await $`bun ./script/copy-icons.ts ${resolveChannel()}`
   await $`bunx electron-builder ${flags} --prepackaged ${app}`
-  await cp(`dist/opencode-desktop-win-${cli.cpu}.exe`, path.join(out, `opencode-desktop-win-${cli.cpu}.exe`))
+  const name = `${getConfig().artifactName}`.replace("${os}", os).replace("${arch}", cli.cpu).replace("${ext}", "exe")
+  await cp(path.join("dist", name), path.join(out, name))
 }
 
 if (!app && os === "linux") {

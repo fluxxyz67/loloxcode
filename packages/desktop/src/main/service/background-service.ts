@@ -1,5 +1,8 @@
 import { app } from "electron"
 import type { Endpoint } from "@opencode/client/service"
+// >>> LOLOX-KIT BEGIN
+import { SERVICE_CHANNEL } from "@opencode/schema/lolox-kit"
+// <<< LOLOX-KIT END
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { SidecarChanged } from "../../shared/ipc-rpc/events"
 import { CHANNEL } from "../constants"
@@ -108,14 +111,15 @@ const prepare = Effect.fn("BackgroundService.prepare")(function* (mode: Backgrou
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
 
-  const file =
-    process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
-      ? path.join(
-          process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state"),
-          "opencode",
-          "service-local.json",
-        )
+  // >>> LOLOX-KIT BEGIN
+  // A channel of its own keeps this app's registration apart from an installed OpenCode's `service.json`.
+  const state = process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state")
+  const file = app.isPackaged
+    ? path.join(state, "opencode", `service-${SERVICE_CHANNEL}.json`)
+    : process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
+      ? path.join(state, "opencode", "service-local.json")
       : undefined
+  // <<< LOLOX-KIT END
 
   return { cli, client, file, isolated, version }
 })

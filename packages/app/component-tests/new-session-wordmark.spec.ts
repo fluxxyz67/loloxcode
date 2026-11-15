@@ -1,11 +1,11 @@
 import type { Page } from "@playwright/test"
 import { expect, story } from "../../stories/playwright/story"
 
-// A cell of the "c" in the wordmark (column 40, row 2 of the 78×14 pin grid).
-const PIN = { x: 40.5 / 78, y: 2.5 / 14 }
+// A cell of the "c" in the wordmark (column 38, row 2 of the 76×14 pin grid).
+const PIN = { x: 38.5 / 76, y: 2.5 / 14 }
 
 // An empty cell above the "o", clear of every pin, side and shadow at rest.
-const EMPTY = { x: 5.5 / 78, y: 0.5 / 14 }
+const EMPTY = { x: 5.5 / 76, y: 0.5 / 14 }
 
 story("draws the wordmark as pins and stops animating once settled", async ({ mount, page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
@@ -66,7 +66,7 @@ story("the lodger pops the pin board out and packs it back into the e", async ({
 
   // Carrying it from its perch back into the "e" reels the pins in and tucks the lodger away.
   const lodger = (await page.locator('[data-slot="wordmark-lodger"]').boundingBox())!
-  const unit = lodger.width / 234
+  const unit = lodger.width / 228
   const perch = (await grip.boundingBox())!
   await page.mouse.move(perch.x + perch.width / 2, perch.y + perch.height / 2)
   await page.mouse.down()

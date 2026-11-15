@@ -1,4 +1,5 @@
 import { For, onCleanup, onMount } from "solid-js"
+import { PIN_COLUMNS } from "@opencode/ui/wordmark/letters"
 import {
   BRICK_BREAKER_LIVES,
   BRICK_BREAKER_TIMING,
@@ -131,11 +132,11 @@ function mountGame(
     // Walls sit on the wordmark's outer pin edges, using the board's integer pitch and rounded origin, so the
     // ball can only reach the top by breaking through.
     const logo = panel.querySelector('[data-slot="wordmark-box"]')?.getBoundingClientRect()
-    const pitch = logo ? Math.max(3, Math.round(logo.width / 78)) : 0
-    const x0 = logo ? Math.round(logo.left - r.left + (logo.width - pitch * 78) / 2) : 0
+    const pitch = logo ? Math.max(3, Math.round(logo.width / PIN_COLUMNS)) : 0
+    const x0 = logo ? Math.round(logo.left - r.left + (logo.width - pitch * PIN_COLUMNS) / 2) : 0
     const c = composerBox()
     view.l = logo ? x0 : Math.max(0, c.x)
-    view.r = logo ? x0 + pitch * 78 : Math.min(view.w, c.x + c.w)
+    view.r = logo ? x0 + pitch * PIN_COLUMNS : Math.min(view.w, c.x + c.w)
     parts.walls[0].style.transform = `translateX(${view.l - 1}px)`
     parts.walls[1].style.transform = `translateX(${view.r}px)`
     pad.w = Math.max(84, Math.min(136, (view.r - view.l) * 0.15))
@@ -220,7 +221,7 @@ function mountGame(
     if (prev.status === "serve" && next.status === "play") launch()
 
     if (prev.status === "play" && next.status === "miss" && sound())
-      PinSound.sweep({ duration: 0.45, columns: 78, reverse: true })
+      PinSound.sweep({ duration: 0.45, columns: PIN_COLUMNS, reverse: true })
 
     if (prev.status === "miss") {
       const spares = brickBreakerSpares(next)
@@ -379,7 +380,7 @@ function mountGame(
     board.restore()
     ball.done()
 
-    if (sound()) PinSound.sweep({ duration: 0.9, columns: 78, reverse: kind !== "win" })
+    if (sound()) PinSound.sweep({ duration: 0.9, columns: PIN_COLUMNS, reverse: kind !== "win" })
   }
 
   // The paddle grows back into the composer, then the composer content fades in over it.

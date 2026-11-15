@@ -20,6 +20,7 @@ import { createPresence } from "@/runtime/presence"
 import { Composer } from "@/composer/composer"
 import { ComposerDropzone } from "@/composer/dropzone"
 import type { ComposerModel } from "@/composer/model"
+import { NewSessionPluginPills } from "@/session/composer/plugin-pills"
 import {
   PromptProjectAddButton,
   type PromptProject,
@@ -120,6 +121,7 @@ export function NewSessionView(props: {
             />
             <div class="mt-8 flex flex-col gap-3">
               <div data-slot="new-session-composer" class="flex flex-col gap-1">
+                <NewSessionPluginPills />
                 <div class="relative z-10">
                   <Composer model={props.composer} />
                 </div>

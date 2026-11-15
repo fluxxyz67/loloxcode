@@ -1,10 +1,10 @@
 {
   "groups": [
     {
-      "name": "OpenCode",
+      "name": "loloXcode",
       "layers": [
         {
-          "name": "OpenCode",
+          "name": "loloXcode",
           "image-name": "icon.png",
           "glass": false
         }
@@ -23,3 +23,4 @@
     "squares": ["macOS"]
   }
 }
+
