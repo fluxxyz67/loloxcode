@@ -108,3 +108,10 @@ Do not commit:
 - `graphify-out/`, `.bun-cache/` — tooling caches
 
 The root `bun run pack` is a different command: it packs the npm workspace into `dist/npm` and `dist/archives`. It is not used for desktop releases, and this fork publishes no npm packages.
+
+## Windows checkouts without symlink privilege
+
+The repository tracks 29 symlinks. A Windows checkout with `core.symlinks=false` (Developer Mode off) writes them as plain text files, so `packages/app/src/custom-elements.d.ts` holds a path instead of a declaration and `bun run typecheck` fails on it. The pre-push hook then rejects every push, whatever you changed.
+
+Fix the checkout by enabling Developer Mode and cloning again, or run `bun run lint` plus a typecheck in a checkout that has real symlinks and push with `git push --no-verify`.
+

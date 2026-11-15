@@ -1036,7 +1036,11 @@ export interface ComposerControl {
   readonly id: string
   /** Sorts controls, lowest first; ties keep contribution order. Defaults to 0. */
   readonly order?: number
-  /** Whether the control shows in this composer; reactive. */
+  /**
+   * Whether the control shows in this composer; reactive.
+   *
+   * @param input - The session, when there is one. Do not destructure.
+   */
   show(input: ComposerControlProps): boolean | undefined
   /**
    * The control. Renders once; its own reactivity updates it. A render that throws renders nothing and records the
