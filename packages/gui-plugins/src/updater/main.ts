@@ -10,7 +10,10 @@ const setup: Plugin.MainSetup = async (ctx) => {
   const builtin = builtinMainContext(ctx)
   const build = ctx.app
   const lifecycle = builtin.lifecycle
-  const enabled = build.packaged
+  // >>> LOLOX-KIT BEGIN
+  // Frozen fork: an upstream update would replace this build with stock OpenCode.
+  const enabled = false
+  // <<< LOLOX-KIT END
   // Holds no resources, so it needs no cleanup.
   const context = logContext(ctx.log.write)
   const runPromise = Effect.runPromiseWith(context)

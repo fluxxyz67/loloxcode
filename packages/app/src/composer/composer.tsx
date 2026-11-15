@@ -14,6 +14,7 @@ import { formatKeybind, useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import type { ComposerModel } from "./model"
 import type { ComposerModelLabel } from "./model-label"
+import type { MountedSession } from "@opencode/plugin/gui"
 import {
   createModelChipState,
   selectModelChipPending,
@@ -24,6 +25,8 @@ import {
 export function Composer(props: {
   class?: string
   model: ComposerModel
+  /** The session the composer belongs to; absent on the new-session screen. */
+  session?: MountedSession
   borderUnderlay?: boolean
   readOnly?: boolean
   suggestionBoundary?: () => HTMLElement | undefined
@@ -60,6 +63,7 @@ export function Composer(props: {
     <div class="flex flex-col gap-3">
       <ComposerEditor
         controller={props.model}
+        session={props.session}
         borderUnderlay={props.borderUnderlay}
         readOnly={props.readOnly}
         class={props.class}

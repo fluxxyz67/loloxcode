@@ -5,6 +5,7 @@ import { createMemo, For, Match, Show, Switch, untrack, type Accessor, type JSX 
 import { createStore } from "solid-js/store"
 import {
   ComposerPill,
+  NewSessionPill,
   type ComposerPillProps,
   type ComposerPillTone,
   type ComposerPillView,
@@ -15,14 +16,22 @@ import {
 import { usePluginHost } from "@/runtime/plugin/host"
 import { Contribution } from "@/runtime/plugin/render"
 import { composerLanePlacement, type useComposerLaneAlignment } from "./composer-lane"
-
+// The capsule styling is global (`[data-composer-pill]`), so every row of pills needs this even where the session
+// composer lane is not mounted, as on the new-session screen.
+import "./composer-lane.css"
 
 type Alignment = ReturnType<ReturnType<typeof useComposerLaneAlignment>>
+type Placement = ReturnType<typeof composerLanePlacement>
 
 const tones: Record<ComposerPillTone, string> = {
   success: "text-v2-state-fg-success",
   warning: "text-v2-state-fg-warning",
   danger: "text-v2-state-fg-danger",
+}
+
+/** What `PillCapsule` hands a pill's `menu` to close the popover with. */
+export interface PillMenuProps {
+  close(): void
 }
 
 // Plugin pills in the composer lane, after the app's own: on the side away from the lane's aligned edge. A pill with
@@ -68,9 +77,77 @@ export function SessionPluginPills(props: {
   )
 }
 
+/**
+ * Plugin pills above the new-session composer, for settings that apply before the user's first message creates the
+ * session. Centered, in flow: nothing floats over the wordmark here.
+ */
+export function NewSessionPluginPills() {
+  const host = usePluginHost()
+
+  const items = createMemo(() =>
+    host.items(NewSessionPill).toSorted((a, b) => (a.value.order ?? 0) - (b.value.order ?? 0)),
+  )
+
+  return (
+    <Show when={items().length > 0}>
+      <div
+        data-component="new-session-plugin-pills"
+        class="flex min-w-0 flex-wrap items-center justify-center gap-2 [&:not(:has(*))]:hidden"
+      >
+        <For each={items()}>
+          {(item) => (
+            <Contribution plugin={item.plugin}>
+              {() => (
+                <PillCapsule
+                  view={() => item.value.show()}
+                  menu={item.value.menu ? () => (input: PillMenuProps) => item.value.menu!(input) : undefined}
+                  placement={() => "top"}
+                />
+              )}
+            </Contribution>
+          )}
+        </For>
+      </div>
+    </Show>
+  )
+}
+
 function PluginPill(props: { pill: ComposerPill; input: ComposerPillProps; alignment: Accessor<Alignment> }) {
   const alignment = props.alignment
-  const view = createMemo(() => props.pill.show(props.input))
+
+  return (
+    <PillCapsule
+      view={() => props.pill.show(props.input)}
+      menu={
+        props.pill.menu
+          ? () => (input: PillMenuProps) =>
+              props.pill.menu!({
+                get session() {
+                  return props.input.session
+                },
+                get screen() {
+                  return props.input.screen
+                },
+                close: input.close,
+              })
+          : undefined
+      }
+      placement={() => composerLanePlacement(alignment())}
+    />
+  )
+}
+
+/**
+ * One capsule and the popover or menu it opens. The session composer and the new-session row share it, so a plugin's
+ * pills look the same wherever the host shows them.
+ */
+export function PillCapsule(props: {
+  view: () => ComposerPillView | undefined
+  /** The pill's popover body. A function so the host only materializes it when the pill has one. */
+  menu?: () => ((input: PillMenuProps) => JSX.Element) | undefined
+  placement: () => Placement
+}) {
+  const view = createMemo(() => props.view())
   const [state, setState] = createStore({ open: false })
 
   return (
@@ -89,12 +166,12 @@ function PluginPill(props: { pill: ComposerPill; input: ComposerPillProps; align
             </button>
           }
         >
-          <Match when={props.pill.menu}>
+          <Match when={props.menu?.()}>
             {(menu) => (
               <Popover
                 open={state.open}
                 onOpenChange={(open) => setState("open", open)}
-                placement={composerLanePlacement(alignment())}
+                placement={props.placement()}
                 gutter={8}
               >
                 <Popover.Trigger
@@ -119,17 +196,7 @@ function PluginPill(props: { pill: ComposerPill; input: ComposerPillProps; align
                       </span>
                     </div>
                     {/* Untracked: the content renders once per open; its own reactivity updates it in place. */}
-                    {untrack(() =>
-                      menu()({
-                        get session() {
-                          return props.input.session
-                        },
-                        get screen() {
-                          return props.input.screen
-                        },
-                        close: () => setState("open", false),
-                      }),
-                    )}
+                    {untrack(() => menu()({ close: () => setState("open", false) }))}
                   </Popover.Content>
                 </Popover.Portal>
               </Popover>
@@ -137,7 +204,7 @@ function PluginPill(props: { pill: ComposerPill; input: ComposerPillProps; align
           </Match>
           <Match when={current().rows}>
             {(rows) => (
-              <Menu gutter={8} placement={composerLanePlacement(alignment())}>
+              <Menu gutter={8} placement={props.placement()}>
                 <Menu.Trigger
                   as="button"
                   type="button"

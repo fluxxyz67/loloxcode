@@ -46,6 +46,8 @@ import type {
   ComposerSuggestion,
 } from "../types"
 import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
+import type { MountedSession } from "@opencode/plugin/gui"
+import { ComposerPluginControls } from "../plugin-controls"
 import { isAttachment, promptLength } from "../prompt-parts"
 import { editorMatchesPrompt, getCursorPosition, isEditorDomBlank, isPromptInlineBlank } from "./dom"
 import {
@@ -88,6 +90,8 @@ export type ComposerEditorProps = {
   readOnly?: boolean
   borderUnderlay?: boolean
   class?: string
+  /** The session the composer writes to; absent on the new-session screen, before one exists. */
+  session?: MountedSession
   modelControl?: JSX.Element
   modelControlsVisible?: boolean
   attachKeybind?: string[]
@@ -505,6 +509,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     </Show>
                   )}
                 </Show>
+                <ComposerPluginControls session={props.session} />
               </Show>
             </div>
           </div>

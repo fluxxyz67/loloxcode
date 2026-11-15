@@ -151,6 +151,11 @@ export function usePluginHost() {
   return host
 }
 
+/** The plugin host, or undefined where none is mounted, such as a story or a test rendering one component. */
+export function useOptionalPluginHost() {
+  return useContext(HostContext)
+}
+
 type HostInput = {
   definitions: Accessor<readonly Entry[]>
   /** The plugins that stay off. Omitted with a bridge, whose plugin manager holds the user's settings. */

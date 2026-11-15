@@ -14,6 +14,7 @@ import wsl from "./wsl"
 import microsoftOffice from "./microsoft-office"
 import sources from "./sources"
 import goal from "./goal"
+import loloxKit from "./lolox-kit"
 
 /** Built-in plugins with their main entries, by id. Lists every built-in so their ids stay reserved. */
 export const builtins = compose({
@@ -32,4 +33,5 @@ export const builtins = compose({
   "microsoft-office": microsoftOffice,
   sources,
   goal,
+  "lolox-kit": { ...loloxKit, mainEntry: () => import("./lolox-kit/main") },
 })

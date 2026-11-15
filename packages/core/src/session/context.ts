@@ -8,6 +8,9 @@ import type { SessionRequestKind } from "@opencode/plugin/effect/session"
 import { CodeModeInstructions } from "../codemode/instructions.js"
 import { Database } from "../database/database.js"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
+import { FSUtil } from "@opencode/util/fs-util"
+import { Global } from "@opencode/util/global"
+import { LoloxKit } from "../lolox-kit/prompt.js"
 import { InstructionDiscovery } from "../instruction-discovery.js"
 import { Instructions } from "../instructions/index.js"
 import { InstructionBuiltIns } from "../instructions/builtins.js"
@@ -81,6 +84,8 @@ const layer = Layer.effect(
     const db = (yield* Database.Service).db
     const discovery = yield* InstructionDiscovery.Service
     const entries = yield* InstructionEntry.Service
+    const fs = yield* FSUtil.Service
+    const global = yield* Global.Service
     const location = yield* Location.Service
     const mcpInstructions = yield* McpInstructions.Service
     const mcpTools = yield* McpTool.Service
@@ -170,6 +175,14 @@ const layer = Layer.effect(
           loaded.discovery,
           loaded.builtins,
           loaded.entries,
+          // >>> LOLOX-KIT BEGIN
+          // Appended last so the shared prefix above stays a reusable prompt-cache prefix.
+          LoloxKit.source({
+            fs,
+            data: global.data,
+            metadata: session.metadata,
+          }),
+          // <<< LOLOX-KIT END
         ]),
         tools: loaded.tools,
       }
@@ -223,6 +236,10 @@ export const node = makeLocationNode({
     InstructionDiscovery.node,
     InstructionEntry.node,
     Location.node,
+    // >>> LOLOX-KIT BEGIN
+    FSUtil.node,
+    Global.node,
+    // <<< LOLOX-KIT END
     McpInstructions.node,
     McpTool.node,
     ReferenceInstructions.node,

@@ -71,9 +71,14 @@ export function versionBelongsToChannel(
 ) {
   if (version === undefined) return false
   if (version === installedVersion) return true
-  const prefix = `0.0.0-${channel}-`
-  if (!version.startsWith(prefix)) return false
-  return /^\d+(?:\.\d+)?$/.test(version.slice(prefix.length))
+  // Preview builds are `0.0.0-<channel>-<build>`. Channel-tagged release builds keep a real semver
+  // so clients that require a minimum version still accept them: `<semver>-<channel>-<build>`.
+  const marker = `-${channel}-`
+  const index = version.indexOf(marker)
+  if (index === -1) return false
+  const base = version.slice(0, index)
+  if (base !== "0.0.0" && !/^\d+\.\d+\.\d+$/.test(base)) return false
+  return /^\d+(?:\.\d+)?$/.test(version.slice(index + marker.length))
 }
 
 export const migrateRegistration = Effect.fnUntraced(function* (

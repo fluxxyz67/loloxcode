@@ -1016,6 +1016,96 @@ export const TitlebarItem = Registry.define<TitlebarItem>("titlebar-item")
  */
 export const ComposerPill = Registry.define<ComposerPill>("composer-pill")
 
+/** What a composer control receives: the session whose composer it sits in, absent before a session exists. */
+export interface ComposerControlProps {
+  /**
+   * The routed session, or undefined on the new-session screen, whose composer has no session until the user's first
+   * message records one. Read it where you act; it is a getter, so do not destructure.
+   */
+  readonly session?: MountedSession
+}
+
+/**
+ * A control in the composer's footer row, beside the model chip and the effort picker, so a setting the user changes
+ * while composing sits where they look. Unlike a `ComposerPill`, it is part of the composer itself: it never floats
+ * over the timeline. On the new-session screen `session` is undefined; use that case for a default that applies to the
+ * session the user is about to create.
+ */
+export interface ComposerControl {
+  /** The control's id, unique within the plugin. */
+  readonly id: string
+  /** Sorts controls, lowest first; ties keep contribution order. Defaults to 0. */
+  readonly order?: number
+  /** Whether the control shows in this composer; reactive. */
+  show(input: ComposerControlProps): boolean | undefined
+  /**
+   * The control. Renders once; its own reactivity updates it. A render that throws renders nothing and records the
+   * error.
+   *
+   * @param input - The session, when there is one. Do not destructure.
+   */
+  render(input: ComposerControlProps): JSX.Element
+}
+
+/**
+ * The registry of controls in the composer's footer row, beside the model and effort controls.
+ *
+ * @example
+ * ```tsx
+ * ctx.add(ComposerControl, {
+ *   id: "mode",
+ *   show: () => true,
+ *   render: (input) => <Switch checked={on(input.session)} onChange={setOn} />,
+ * })
+ * ```
+ */
+export const ComposerControl = Registry.define<ComposerControl>("composer-control")
+
+/** What a new-session pill's `menu` receives: a way to close the popover. Do not destructure. */
+export interface NewSessionPillMenuProps {
+  /** Closes the popover, for example after the user picks an action in it. Does nothing once it is closed. */
+  close(): void
+}
+
+/**
+ * A pill in the row above the new-session screen's composer, beside the app's own. It has no session: the screen
+ * records the user's first message into one. Use it for settings that apply before a session exists, such as a default
+ * for the sessions the user is about to create.
+ */
+export interface NewSessionPill {
+  /** The pill's id, unique within the plugin. */
+  readonly id: string
+  /** Sorts plugin pills, lowest first; ties keep contribution order. Defaults to 0. */
+  readonly order?: number
+  /**
+   * The pill, or undefined to show none. Reactive: the host runs it again when what it reads changes, so read your own
+   * state here.
+   */
+  show(): ComposerPillView | undefined
+  /**
+   * Your content for the popover the pill opens, for a pill that needs more than `rows`. The host owns the capsule and
+   * the popover around this content: its placement, focus, dismissal, and the heading (`title`, else `label`). When
+   * set, clicking the pill opens the popover, and the view's `rows` and `run` are unused. Renders each time the popover
+   * opens; its own reactivity updates it while open. A render that throws renders nothing and records the error.
+   *
+   * @param input - A way to close the popover. Do not destructure.
+   */
+  menu?(input: NewSessionPillMenuProps): JSX.Element
+}
+
+/**
+ * The registry of pills above the new-session screen's composer, for settings that apply before a session exists.
+ *
+ * @example
+ * ```tsx
+ * ctx.add(NewSessionPill, {
+ *   id: "defaults",
+ *   show: () => ({ icon: "check", label: ctx.t("defaults") }),
+ * })
+ * ```
+ */
+export const NewSessionPill = Registry.define<NewSessionPill>("new-session-pill")
+
 /**
  * The registry of renderers for fenced code blocks, by language.
  *

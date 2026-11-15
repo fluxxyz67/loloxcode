@@ -273,6 +273,10 @@ test("service filenames share release channels and identify preview channels", (
   expect(ServiceConfig.versionBelongsToChannel("0.0.0-preview-a-1234.2", "preview-a")).toBe(true)
   expect(ServiceConfig.versionBelongsToChannel("0.0.0-preview-a-other-1234", "preview-a")).toBe(false)
   expect(ServiceConfig.versionBelongsToChannel("1.2.3", "preview-a")).toBe(false)
+  // Channel-tagged release builds keep a real semver for minimum-version checks.
+  expect(ServiceConfig.versionBelongsToChannel("2.2.7-preview-a-202611111400", "preview-a")).toBe(true)
+  expect(ServiceConfig.versionBelongsToChannel("2.2.7-preview-b-202611111400", "preview-a")).toBe(false)
+  expect(ServiceConfig.versionBelongsToChannel("2.2.7-preview-a-", "preview-a")).toBe(false)
 })
 
 test("service config migrates from the hashed channel filename", async () => {
