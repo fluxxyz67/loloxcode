@@ -4,10 +4,10 @@
   "version": "2.2.7",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "homepage": "https://github.com/gregnathanael/loloxcode",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "loloXcode",
+    "email": "hello@loloxcode.dev"
   },
   "scripts": {
     "typecheck": "bun check --no-script -b",

@@ -21,10 +21,11 @@ body:
   - type: input
     id: opencode-version
     attributes:
-      label: OpenCode version
-      description: What version of OpenCode are you using?
+      label: loloXcode version
+      description: Shown in Settings → About, e.g. 2.2.7-loloxcode-202611120043
+      placeholder: 2.2.7-loloxcode-202611120043
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: reproduce
