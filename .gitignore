@@ -38,3 +38,14 @@ tsconfig.tsbuildinfo
 
 # Legal drafts pending review are kept outside the repository; never copy them in.
 legal-drafts-private/
+
+# Local packaging workspace (the two-pass desktop pack copies win-unpacked here)
+.pack/
+
+# Code graph and search caches
+graphify-out/
+.bun-cache/
+
+# Working notes and design sources kept outside the public tree
+next features/
+patches/lolox-kit.patch
