@@ -26,8 +26,6 @@ const INTEGRATION = "opencode"
 const TONE = { success: "success", warning: "warning" } as const
 const ROTATE_ICON = "outline-rotate-clockwise" as const
 
-/** The refusals that mean the free allowance ran out, not a provider or a network failing. */
-const LIMIT_ERRORS = new Set(["provider.free-limit", "provider.go-limit"])
 /** How many rotations auto continue spends on one session before it gives up, and over what window. */
 const AUTO_MAX = 5
 const AUTO_WINDOW_MS = 30 * 60_000
@@ -62,6 +60,9 @@ interface RotateOutcome {
  */
 const setup: Plugin.Setup<typeof definition> = (ctx) => {
   if (!ctx.desktop) return
+
+  /** The refusals that mean the free allowance ran out, not a provider or a network failing. */
+  const LIMIT_ERRORS = new Set(["provider.free-limit", "provider.go-limit"])
 
   const kit = ctx.use(LoloxKit)
   // One entry per session key: whether the appended prompt reaches that session. A missing entry is "not read yet".
