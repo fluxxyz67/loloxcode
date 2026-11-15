@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/gregnathanael/loloxcode/releases/latest">
+  <a href="https://github.com/fluxxyz67/loloxcode/releases/latest">
     <picture>
       <source srcset=".github/assets/loloxcode-lockup-paper.svg" media="(prefers-color-scheme: dark)">
       <source srcset=".github/assets/loloxcode-lockup-ink.svg" media="(prefers-color-scheme: light)">
@@ -11,8 +11,8 @@
 <p align="center">A focused build of the open source AI coding agent.</p>
 
 <p align="center">
-  <a href="https://github.com/gregnathanael/loloxcode/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/gregnathanael/loloxcode?style=flat-square&label=release"></a>
-  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/github/license/gregnathanael/loloxcode?style=flat-square"></a>
+  <a href="https://github.com/fluxxyz67/loloxcode/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/fluxxyz67/loloxcode?style=flat-square&label=release"></a>
+  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/github/license/fluxxyz67/loloxcode?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/platform-windows%20x64-173A72?style=flat-square">
 </p>
 
@@ -26,7 +26,7 @@
 
 ## Install
 
-Windows 10/11, x64. Download the installer from the [latest release](https://github.com/gregnathanael/loloxcode/releases/latest):
+Windows 10/11, x64. Download the installer from the [latest release](https://github.com/fluxxyz67/loloxcode/releases/latest):
 
 | File                             | Size    | Notes                          |
 | -------------------------------- | ------- | ------------------------------ |

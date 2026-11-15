@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/gregnathanael/loloxcode/releases/latest">
+  <a href="https://github.com/fluxxyz67/loloxcode/releases/latest">
     <picture>
       <source srcset=".github/assets/loloxcode-lockup-paper.svg" media="(prefers-color-scheme: dark)">
       <source srcset=".github/assets/loloxcode-lockup-ink.svg" media="(prefers-color-scheme: light)">
@@ -11,8 +11,8 @@
 <p align="center">Build terarah dari agen coding AI open source.</p>
 
 <p align="center">
-  <a href="https://github.com/gregnathanael/loloxcode/releases/latest"><img alt="Rilis terbaru" src="https://img.shields.io/github/v/release/gregnathanael/loloxcode?style=flat-square&label=rilis"></a>
-  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/github/license/gregnathanael/loloxcode?style=flat-square"></a>
+  <a href="https://github.com/fluxxyz67/loloxcode/releases/latest"><img alt="Rilis terbaru" src="https://img.shields.io/github/v/release/fluxxyz67/loloxcode?style=flat-square&label=rilis"></a>
+  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/github/license/fluxxyz67/loloxcode?style=flat-square"></a>
   <img alt="Windows x64" src="https://img.shields.io/badge/platform-windows%20x64-173A72?style=flat-square">
 </p>
 
@@ -26,7 +26,7 @@
 
 ## Instalasi
 
-Windows 10/11, x64. Unduh installer dari [rilis terbaru](https://github.com/gregnathanael/loloxcode/releases/latest):
+Windows 10/11, x64. Unduh installer dari [rilis terbaru](https://github.com/fluxxyz67/loloxcode/releases/latest):
 
 | Berkas                          | Ukuran  | Catatan                       |
 | ------------------------------- | ------- | ----------------------------- |
