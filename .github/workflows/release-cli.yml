@@ -1,0 +1,48 @@
+name: release-cli
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the CLI assets to"
+        required: true
+        default: "v1.0.0"
+      ref:
+        description: "Git ref to build"
+        required: true
+        default: "main"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-cli
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Set up Bun
+        uses: ./.github/actions/setup-bun
+        with:
+          bun-version: "1.4.4"
+      - name: Build every CLI target
+        working-directory: packages/cli
+        run: bun run build
+        env:
+          BUN_COMPILE_RELEASE: bun-v1.4.4
+          GH_TOKEN: ${{ github.token }}
+      - name: Pack release assets
+        working-directory: packages/cli
+        run: bun run script/release-cli.ts
+      - name: Upload assets
+        run: gh release upload "$TAG" packages/cli/dist/release/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
