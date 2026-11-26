@@ -24,11 +24,11 @@ const INTEGRATION = "opencode"
 
 /** Kept as `const` so the literals stay narrow enough for `ComposerPillTone` and `IconName`. */
 const TONE = { success: "success", warning: "warning" } as const
+
 const ROTATE_ICON = "outline-rotate-clockwise" as const
 
-/** How many rotations auto continue spends on one session before it gives up, and over what window. */
-const AUTO_MAX = 5
-const AUTO_WINDOW_MS = 30 * 60_000
+/** How long auto continue waits before starting a failed rotation or send over. There is no attempt cap. */
+const AUTO_RETRY_MS = 5_000
 
 /** A failure, as a toast's description. */
 const message = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause))
@@ -81,10 +81,17 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   // Failures recorded before this window attached are history, not something to resume.
   const startedAt = Date.now()
   const seen = new Set<string>()
-  const attempts = new Map<string, { count: number; first: number }>()
+  // Rotations spent on one session's current limit streak, for the toast; a success clears the entry.
+  const attempts = new Map<string, number>()
   const queue: { key: string; server: ServerRef; sessionID: string }[] = []
   const queued = new Set<string>()
   let draining = false
+  // Bumped when auto continue is switched off or this instance tears down, so a running retry loop gives up.
+  let autoEpoch = 0
+
+  onCleanup(() => {
+    autoEpoch++
+  })
 
   const autoOn = () => autoContinue.value.on
 
@@ -100,9 +107,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   /** Every open session on a connected server, by key. */
   const openSessions = () => {
     const open = new Map<string, SessionRef>()
+
     for (const ref of ctx.sessions.list()) open.set(ref.key, ref)
     const current = ctx.sessions.current()
+
     if (current) open.set(current.key, current)
+
     return [...open.values()].filter((ref) => !ref.pending && ref.server.connected)
   }
 
@@ -112,17 +122,22 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
    */
   const reaches = (metadata: SessionMetadata | undefined) => {
     const own = metadata?.[ABLITERATED_KEY]
+
     if (own === true || own === false) return own
+
     return defaultSince() !== undefined
   }
 
   const read = async (ref: SessionRef, signal?: AbortSignal) => {
     const session = client(ref.server.id)
+
     if (!session) return
 
     const stamp = writes.get(ref.key) ?? 0
+
     try {
       const info = await session.session.get({ sessionID: ref.id }, { signal })
+
       if ((writes.get(ref.key) ?? 0) !== stamp) return
       setEnabled(ref.key, reaches(info.metadata))
     } catch {
@@ -132,18 +147,21 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
 
   const setPrompt = async (ref: MountedSession, next: boolean) => {
     const session = client(ref.server.id)
+
     if (!session) return
 
     const stamp = (writes.get(ref.key) ?? 0) + 1
     const previous = enabled[ref.key]
     writes.set(ref.key, stamp)
     setEnabled(ref.key, next)
+
     try {
       // `session.update` replaces the whole object, so start from the session's own copy. Writing the annotation even
       // when it matches the default is what makes this session's choice outrank the default from then on.
       const info = await session.session.get({ sessionID: ref.id })
       const metadata: SessionMetadata = { ...(info.metadata ?? {}) }
       metadata[ABLITERATED_KEY] = next
+
       if ((writes.get(ref.key) ?? 0) !== stamp) return
       await session.session.update({ sessionID: ref.id, metadata })
     } catch (cause) {
@@ -157,12 +175,15 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     if (settingDefault()) return
 
     const live = kit()
+
     if (live.status !== "active") return
 
     setSettingDefault(true)
+
     try {
       const result = await live.value.setPromptDefault({ since: next ? Date.now() : undefined })
       setDefaultSince(result.since)
+
       for (const ref of openSessions()) void read(ref)
     } catch (cause) {
       showToast({ variant: "error", title: ctx.t("prompt.defaultFailed"), description: message(cause) })
@@ -181,19 +202,24 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
    * another rotation runs waits for it. Removal of the metered credential only happens for a manual reset.
    */
   let rotations: Promise<void> = Promise.resolve()
+
   const rotateCore = (serverID: string | undefined, wipe: boolean): Promise<RotateOutcome | undefined> => {
     const run = async (): Promise<RotateOutcome | undefined> => {
       const session = client(serverID)
       const live = kit()
+
       if (!session || live.status !== "active") return undefined
 
       setRotating(true)
       let removed: boolean | undefined
+
       try {
         if (wipe) {
           const credentials = await session.credential.list()
           const metered = credentials.filter((entry) => entry.integrationID === INTEGRATION)
+
           if (metered.length > 0) removed = true
+
           for (const entry of metered) {
             try {
               await session.credential.remove({ credentialID: entry.id })
@@ -204,9 +230,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
         }
 
         const current = kit()
+
         if (current.status !== "active") return undefined
         const result = await current.value.rotate()
+
         if (result.ok) setExitIP(result.exitIP)
+
         return { ok: result.ok, exitIP: result.exitIP, message: result.message, removed }
       } catch (cause) {
         return { ok: false, message: message(cause), removed }
@@ -220,6 +249,7 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
       () => undefined,
       () => undefined,
     )
+
     return task
   }
 
@@ -227,19 +257,24 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     if (rotating()) return
 
     const result = await rotateCore(serverID, wipe)
+
     if (result === undefined) return
+
     if (!result.ok) {
       showToast({ variant: "error", title: ctx.t("limit.failed"), description: result.message })
+
       return
     }
 
     const ip = result.exitIP
     const detail = ip === undefined ? undefined : ctx.t("limit.rotateDoneDetail", { ip })
     // "Sign in again" only when a credential was actually there to remove; free usage without one is IP-bound alone.
+
     const done =
       wipe && result.removed !== undefined
         ? ctx.t(ip === undefined ? "limit.resetDoneNoIP" : "limit.resetDoneDetail", ip === undefined ? undefined : { ip })
         : detail
+
     showToast({
       variant: "success",
       title: ctx.t(wipe ? "limit.resetDone" : "limit.rotateDone"),
@@ -248,71 +283,111 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   }
 
   /**
-   * Auto continue: a top-level session whose turn hit the free allowance gets a new exit IP, then `continue`. A second
-   * failure is the same path again, until the cap keeps one session from rotating forever. Subagents are skipped; the
-   * parent's own failure event is the one worth resuming.
+   * Auto continue: a top-level session whose turn hit the free allowance gets a new exit IP, then `continue`. Nothing
+   * here gives up on its own: a failed rotation or a prompt the restarted server cannot take yet is retried until it
+   * lands, and the next limit failure runs the same path again. Subagents are skipped; the parent's own failure event
+   * is the one worth resuming.
    */
   const recover = async (server: ServerRef, sessionID: string) => {
     if (!autoOn()) return
 
     const info = await server.client.session.get({ sessionID }).catch(() => undefined)
+
     if (!info || info.parentID) return
 
     const key = sessionKey(server.id, sessionID)
-    const now = Date.now()
-    const previous = attempts.get(key)
-    const current =
-      previous !== undefined && now - previous.first <= AUTO_WINDOW_MS
-        ? { count: previous.count + 1, first: previous.first }
-        : { count: 1, first: now }
-    attempts.set(key, current)
-
-    if (current.count > AUTO_MAX) {
-      showToast({
-        variant: "error",
-        title: ctx.t("limit.autoCap"),
-        description: ctx.t("limit.autoCapDetail", { count: AUTO_MAX }),
-      })
-      return
-    }
+    const count = (attempts.get(key) ?? 0) + 1
+    attempts.set(key, count)
+    const epoch = autoEpoch
+    const live = () => autoEpoch === epoch && autoOn()
 
     setAutoRunning(true)
+
     try {
-      const result = await rotateCore(server.id, false)
+      const result = await rotateUntilLive(server.id, live)
+
       if (result === undefined) return
-      if (!result.ok) {
-        showToast({ variant: "error", title: ctx.t("limit.autoRotateFailed"), description: result.message })
-        return
-      }
 
       const ip = result.exitIP
       showToast({
         variant: "success",
-        title: ctx.t(current.count > 1 ? "limit.autoStill" : "limit.autoStart"),
+        title: ctx.t(count > 1 ? "limit.autoStill" : "limit.autoStart"),
         description:
-          current.count > 1
-            ? ctx.t("limit.autoStillDetail", { count: current.count, max: AUTO_MAX })
+          count > 1
+            ? ctx.t("limit.autoStillDetail", { count })
             : ip === undefined
               ? undefined
               : ctx.t("limit.autoStartDetail", { ip }),
       })
 
-      try {
-        // The rotation restarted the server, so the stream is still reconnecting; a prompt sent into that gap fails.
-        const deadline = Date.now() + 20_000
-        while (!server.connected && Date.now() < deadline) await wait(250)
-        await server.client.session.prompt({ sessionID, text: "continue" })
-      } catch (cause) {
-        showToast({ variant: "error", title: ctx.t("limit.autoContinueFailed"), description: message(cause) })
-      }
+      await continueUntilLive(server, sessionID, live)
     } finally {
       setAutoRunning(false)
+    }
+  }
+
+  /**
+   * Rotates until WARP reports a new exit. A failed lap waits and starts over while auto continue is on, because a WARP
+   * restart or a dropped proxy is exactly what the next lap is for. The first failure is reported once per recovery.
+   */
+  const rotateUntilLive = async (serverID: string | undefined, live: () => boolean) => {
+    let told = false
+
+    for (;;) {
+      const result = await rotateCore(serverID, false)
+
+      if (!live()) return undefined
+
+      if (result?.ok) return result
+
+      if (!told) {
+        showToast({
+          variant: "error",
+          title: ctx.t("limit.autoRotateFailed"),
+          description: [result?.message, ctx.t("limit.autoRetry")].filter(Boolean).join(" "),
+        })
+        told = true
+      }
+
+      await wait(AUTO_RETRY_MS)
+
+      if (!live()) return undefined
+    }
+  }
+
+  /** Sends `continue` until the server takes it; a reconnect gap or a mid-restart refusal is retried. */
+  const continueUntilLive = async (server: ServerRef, sessionID: string, live: () => boolean) => {
+    let told = false
+
+    for (;;) {
+      // The rotation restarted the server, so the stream is still reconnecting; a prompt sent into that gap fails.
+      const deadline = Date.now() + 20_000
+
+      while (!server.connected && Date.now() < deadline) await wait(250)
+
+      if (!live()) return
+
+      try {
+        await server.client.session.prompt({ sessionID, text: "continue" })
+
+        return
+      } catch (cause) {
+        if (!told) {
+          showToast({ variant: "error", title: ctx.t("limit.autoContinueFailed"), description: message(cause) })
+          told = true
+        }
+
+        await wait(AUTO_RETRY_MS)
+
+        if (!live()) return
+      }
     }
   }
 
   /** One recovery at a time; a failure that arrives while another runs waits its turn. */
   const enqueue = (server: ServerRef, sessionID: string) => {
     const key = sessionKey(server.id, sessionID)
+
     if (queued.has(key)) return
     queued.add(key)
     queue.push({ key, server, sessionID })
@@ -322,6 +397,7 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   const drain = async () => {
     if (draining) return
     draining = true
+
     try {
       for (let item = queue.shift(); item !== undefined; item = queue.shift()) {
         queued.delete(item.key)
@@ -334,13 +410,17 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
 
   const onFailure = (server: ServerRef, event: LimitFailure) => {
     if (!autoOn()) return
+
     if (!LIMIT_ERRORS.has(event.data.error.type)) return
     // A durable event replays after a reconnect; only recent failures from this window's lifetime are new.
+
     if (event.created < startedAt || Date.now() - event.created > 5 * 60_000) return
 
     const key = sessionKey(server.id, event.id)
+
     if (seen.has(key)) return
     seen.add(key)
+
     if (seen.size > 500) seen.clear()
     enqueue(server, event.data.sessionID)
   }
@@ -348,6 +428,7 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   /** The free-limit pill, for a session's composer or for the new-session screen. */
   const limitView = (serverID: () => string | undefined): ComposerPillView | undefined => {
     if (kit().status !== "active") return
+
     if (rotating() || autoRunning())
       return {
         label: ctx.t(autoRunning() ? "limit.autoBusy" : "limit.busy"),
@@ -358,6 +439,7 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
 
     const ip = exitIP()
     const auto = autoOn()
+
     return {
       label: ctx.t("limit.label"),
       icon: ROTATE_ICON,
@@ -371,7 +453,9 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
           tone: auto ? TONE.success : undefined,
           run: () => {
             autoContinue.set({ on: !auto })
+
             if (auto) {
+              autoEpoch++
               attempts.clear()
               queue.length = 0
               queued.clear()
@@ -417,6 +501,7 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     (refs) => {
       const controller = new AbortController()
       onCleanup(() => controller.abort())
+
       for (const ref of refs) void read(ref, controller.signal)
     },
     { equals: (previous, next) => previous.length === next.length && previous.every((ref, i) => ref.key === next[i]?.key) },
@@ -435,14 +520,17 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     (servers) => {
       const offs = servers.map((server) => {
         const failed = server.data.on("session.execution.failed", (event) => onFailure(server, event))
+
         const succeeded = server.data.on("session.execution.succeeded", (event) =>
           attempts.delete(sessionKey(server.id, event.data.sessionID)),
         )
+
         return () => {
           failed()
           succeeded()
         }
       })
+
       onCleanup(() => offs.forEach((off) => off()))
     },
     { equals: (previous, next) => previous.length === next.length && previous.every((server, i) => server.id === next[i]?.id) },
@@ -456,9 +544,12 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     render: (input: ComposerControlProps) => {
       const on = () => {
         const session = input.session
+
         if (!session) return defaultSince() !== undefined
+
         return enabled[session.key]
       }
+
       const title = () =>
         input.session
           ? ctx.t(on() === true ? "prompt.on" : "prompt.off")

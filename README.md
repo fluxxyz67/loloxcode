@@ -45,7 +45,7 @@ The agent, providers, tools, config format, and CLI are upstream opencode. This 
 | Identity          | loloXcode wordmark, icons, and app ids: `app.loloxcode.desktop`, `app.loloxcode.desktop.dev`, `app.loloxcode.desktop.beta` |
 | Channels          | Dev, Beta, and Prod install side by side, each with its own app id, product name, and local service (`loloxcode` channel)  |
 | Free limit        | A **Limit** control in the composer rotates the Cloudflare WARP exit IP and retries, instead of ending the turn             |
-| Auto continue     | Optional. After a rotation the session sends `continue` by itself, up to 5 times per 30 minutes, top-level sessions only    |
+| Auto continue     | Optional. After a rotation the session sends `continue` by itself and keeps retrying with no attempt cap, top-level sessions only |
 | Desktop updater   | Disabled on purpose: this build never replaces itself with a stock opencode release                                        |
 | Theme gallery     | Appearance settings preview themes as a grid of swatches before you commit to one                                          |
 

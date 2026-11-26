@@ -45,7 +45,7 @@ Agen, provider, tool, format konfigurasi, dan CLI tetap opencode upstream. Fork 
 | Identitas        | Wordmark, ikon, dan app id loloXcode: `app.loloxcode.desktop`, `app.loloxcode.desktop.dev`, `app.loloxcode.desktop.beta`     |
 | Channel          | Dev, Beta, dan Prod bisa terpasang berdampingan, masing-masing dengan app id, nama produk, dan service lokal sendiri          |
 | Limit gratis     | Tombol **Limit** di composer memutar exit IP Cloudflare WARP lalu mencoba lagi, bukan menghentikan percakapan                 |
-| Auto continue    | Opsional. Setelah rotasi, sesi mengirim `continue` sendiri, maksimal 5 kali per 30 menit, hanya untuk sesi top-level          |
+| Auto continue    | Opsional. Setelah rotasi, sesi mengirim `continue` sendiri dan terus mengulang tanpa batas percobaan, hanya untuk sesi top-level |
 | Updater desktop  | Sengaja dimatikan: build ini tidak akan menimpa dirinya dengan rilis opencode resmi                                          |
 | Galeri tema      | Setelan tampilan menampilkan kisi contoh warna tema sebelum kamu memilih                                                     |
 
