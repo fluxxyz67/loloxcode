@@ -18,9 +18,12 @@ export const ABLITERATED_FILENAME = "abliterated.md"
 export const ABLITERATED_DEFAULT_FILENAME = "abliterated-default"
 
 /**
- * The CLI channel this build is compiled with (`OPENCODE_CHANNEL`). A channel of its own keeps loloXcode's background
- * service registration and default port apart from a separately installed OpenCode, which would otherwise replace the
- * other app's server on every start. Must match the channel passed when building `packages/cli`.
+ * The registration file a CLI built for `channel` writes under the state directory, mirroring
+ * `ServiceConfig.filename` in `packages/cli`. The desktop must read the file the bundled CLI writes, so both sides
+ * derive it from the same channel: a mismatch leaves the desktop polling a file nobody updates and startup times out.
  */
-export const SERVICE_CHANNEL = "loloxcode"
+export function serviceFilename(channel: string) {
+  if (channel === "latest" || channel === "dev" || channel === "beta" || channel === "next") return "service.json"
+  return `service-${channel.replace(/[^a-zA-Z0-9._-]/g, "-")}.json`
+}
 

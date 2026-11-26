@@ -51,6 +51,9 @@ The CLI is bundled into the desktop app, so build it first. Then pack the app tw
 
 ```powershell
 # 1. CLI: fork code goes into the bundled service binary
+#    Build it with the same channel as the desktop app: the CLI registers
+#    service-<channel>.json and the desktop reads that exact file.
+$env:OPENCODE_CHANNEL = "prod"
 bun run --cwd packages/cli build
 
 # 2. Desktop app, prod channel
@@ -80,7 +83,7 @@ Get-Item D:\loloxcode\dist\desktop\loloxcode-desktop-win-x64.exe | Select-Object
 Get-FileHash D:\loloxcode\dist\desktop\loloxcode-desktop-win-x64.exe -Algorithm SHA256
 ```
 
-Install it once on a clean profile and confirm: the window title says `loloXcode`, the app id under `%LOCALAPPDATA%\Programs` is `app.loloxcode.desktop`, and the service file `%USERPROFILE%\.local\state\opencode\service-loloxcode.json` appears.
+Install it once on a clean profile and confirm: the window title says `loloXcode`, the app id under `%LOCALAPPDATA%\Programs` is `app.loloxcode.desktop`, and the service file `%USERPROFILE%\.local\state\opencode\service-prod.json` appears.
 
 ## Publish
 

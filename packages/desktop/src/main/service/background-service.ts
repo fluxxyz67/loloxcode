@@ -1,7 +1,7 @@
 import { app } from "electron"
 import type { Endpoint } from "@opencode/client/service"
 // >>> LOLOX-KIT BEGIN
-import { SERVICE_CHANNEL } from "@opencode/schema/lolox-kit"
+import { serviceFilename } from "@opencode/schema/lolox-kit"
 // <<< LOLOX-KIT END
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { SidecarChanged } from "../../shared/ipc-rpc/events"
@@ -115,7 +115,7 @@ const prepare = Effect.fn("BackgroundService.prepare")(function* (mode: Backgrou
   // A channel of its own keeps this app's registration apart from an installed OpenCode's `service.json`.
   const state = process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state")
   const file = app.isPackaged
-    ? path.join(state, "opencode", `service-${SERVICE_CHANNEL}.json`)
+    ? path.join(state, "opencode", serviceFilename(CHANNEL))
     : process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
       ? path.join(state, "opencode", "service-local.json")
       : undefined
